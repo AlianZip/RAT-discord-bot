@@ -1,5 +1,7 @@
 #![allow(non_snake_case)]
 
+mod dowithsys;
+
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::prelude::*;
@@ -44,8 +46,8 @@ async fn main() {
         Client::builder(&token, intents).event_handler(Handler).await.unwrap();
 
     // Start listening for events by starting a single shard
-    if let Err(_) = client.start().await {
-       todo!();
+    if let Err(why) = client.start().await {
+        println!("Error client started: {why:?}");
     }
 }
 
