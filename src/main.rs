@@ -1,13 +1,13 @@
 #![allow(non_snake_case)]
 
-use std::env;
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::prelude::*;
-use std::fs;
 use serde_json;
+use serde::Deserialize;
 
 #[allow(dead_code)]
+#[derive(Deserialize)]
 struct Config {
     TOKEN: String,
 }
@@ -15,7 +15,8 @@ struct Config {
 #[allow(dead_code)]
 fn config_reader() -> Config {
     let res = include_str!("config.json");
-    Config{ TOKEN: serde_json::from_str(res).unwrap() }
+    let des: Config = serde_json::from_str(res).unwrap();
+    return des;
 }
 
 struct Handler;
