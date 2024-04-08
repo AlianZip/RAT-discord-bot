@@ -12,4 +12,3 @@ pub async fn make_screenshot() -> CreateAttachment {
 
     return ch.unwrap();
 }
-
