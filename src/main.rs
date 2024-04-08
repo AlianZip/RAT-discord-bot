@@ -6,16 +6,15 @@ mod dowithsys;
 use dowithsys::make_screenshot;
 use serde::Deserialize;
 use serde_json;
-use serenity::all::{Command, CreateMessage, GuildId, Ready};
+use serenity::all::{CreateMessage, GuildId, Ready};
 use serenity::async_trait;
 use serenity::builder::{CreateInteractionResponse, CreateInteractionResponseMessage};
-use serenity::framework::standard::{Configuration, StandardFramework};
 use serenity::model::application::Interaction;
 use serenity::model::channel::Message;
 use serenity::prelude::*;
 use tokio::sync::Mutex;
 
-use std::env::{self, current_dir};
+use std::env::current_dir;
 use std::str::FromStr;
 
 #[allow(dead_code)]
@@ -71,10 +70,10 @@ impl EventHandler for Handler {
             }
         }
     }
-    async fn ready(&self, ctx: Context, ready: Ready) {
+    async fn ready(&self, ctx: Context, _ready: Ready) {
         let guild_id = GuildId::from_str("1224445880279634072").unwrap();
 
-        let commands = guild_id
+        let _commands = guild_id
             .set_commands(
                 &ctx.http,
                 vec![commands::cd::register(), commands::ls::register()],
