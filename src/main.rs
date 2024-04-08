@@ -60,7 +60,6 @@ impl EventHandler for Handler {
                 "ls" => Some(commands::ls::run(&command.data.options(), &mut *nowpath)),
                 _ => Some("not implemented ".to_string()),
             };
-            println!("{}", self.now_path.lock().await);
             if let Some(content) = content {
                 let data = CreateInteractionResponseMessage::new().content(content);
                 let builder = CreateInteractionResponse::Message(data);

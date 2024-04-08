@@ -9,7 +9,7 @@ pub fn run(options: &[ResolvedOption], now_path: &mut String) -> String {
             .trim_end_matches("\")")
             .to_string();
         now_path.insert_str(now_path.len(), &format!("\\{}",&dir));
-        dir
+        now_path.to_string()
     } else {
         "Not valid options".to_string()
     }
