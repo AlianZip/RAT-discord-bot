@@ -6,7 +6,7 @@ mod dowithsys;
 use dowithsys::make_screenshot;
 use serde::Deserialize;
 use serde_json;
-use serenity::all::{CreateMessage, GuildId, Ready};
+use serenity::all::{ CreateAttachment, CreateMessage, GuildId, Ready};
 use serenity::async_trait;
 use serenity::builder::{CreateInteractionResponse, CreateInteractionResponseMessage};
 use serenity::model::application::Interaction;
@@ -21,20 +21,18 @@ use std::str::FromStr;
 #[derive(Deserialize)]
 struct Config {
     TOKEN: String,
+    GUIDID: String,
 }
 
 struct Handler {
     now_path: Mutex<String>,
 }
 
-
-
 #[async_trait]
 impl EventHandler for Handler {
     async fn message(&self, ctx: Context, msg: Message) {
         if msg.content.chars().next().unwrap() == '!' {
             let _ = match rem_first(&msg.content) {
-                "ping" => msg.channel_id.say(&ctx.http, "pong!").await,
                 "screenshot" => {
                     let ch = make_screenshot().await;
                     msg.channel_id
@@ -43,9 +41,7 @@ impl EventHandler for Handler {
                 }
                 "pwd" => {
                     let path = &self.now_path.lock().await;
-                    msg.channel_id
-                        .say(ctx.http, path.to_string())
-                        .await
+                    msg.channel_id.say(ctx.http, path.to_string()).await
                 }
 
                 _ => todo!(),
@@ -58,24 +54,36 @@ impl EventHandler for Handler {
             let content = match command.data.name.as_str() {
                 "cd" => Some(commands::cd::run(&command.data.options(), &mut *nowpath)),
                 "ls" => Some(commands::ls::run(&command.data.options(), &mut *nowpath)),
+                "sendfile" => Some(commands::sendfile::run(&command.data.options(), &mut *nowpath)),
+                "ping" => Some(commands::ping::run(&command.data.options())),
                 _ => Some("not implemented ".to_string()),
             };
             if let Some(content) = content {
-                let data = CreateInteractionResponseMessage::new().content(content);
-                let builder = CreateInteractionResponse::Message(data);
-                if let Err(why) = command.create_response(&ctx.http, builder).await {
-                    println!("Cannot respond to slash command: {why}");
+                if command.data.name == "sendfile" {
+                    let p: CreateAttachment = serde_json::from_str(&content).unwrap();
+                    let data = CreateInteractionResponseMessage::new().add_file(p);
+                    let builder = CreateInteractionResponse::Message(data);
+                    if let Err(why) = command.create_response(&ctx.http, builder).await {
+                        println!("Cannot respond to slash command: {why}");
+                    }
+                } else {
+                    let data = CreateInteractionResponseMessage::new().content(content);
+                    let builder = CreateInteractionResponse::Message(data);
+                    if let Err(why) = command.create_response(&ctx.http, builder).await {
+                        println!("Cannot respond to slash command: {why}");
+                    }
                 }
+                
             }
         }
     }
     async fn ready(&self, ctx: Context, _ready: Ready) {
-        let guild_id = GuildId::from_str("1224445880279634072").unwrap();
+        let guild_id = GuildId::from_str(&config_reader().GUIDID).unwrap();
 
         let _commands = guild_id
             .set_commands(
                 &ctx.http,
-                vec![commands::cd::register(), commands::ls::register()],
+                vec![commands::cd::register(), commands::ls::register(), commands::sendfile::register(), commands::ping::register()],
             )
             .await;
     }
@@ -113,3 +121,4 @@ fn rem_first(value: &str) -> &str {
     chars.next();
     chars.as_str()
 }
+
