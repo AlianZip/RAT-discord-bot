@@ -2,7 +2,7 @@ use serenity::builder::CreateCommand;
 use serenity::model::application::ResolvedOption;
 use std::fs::{metadata, read_dir};
 
-pub fn run(_options: &[ResolvedOption], now_path: &mut String) -> String {
+pub fn run(now_path: &mut String) -> String {
     let mut files = String::new();
     let paths = read_dir(now_path.clone()).unwrap();
     for path in paths {

