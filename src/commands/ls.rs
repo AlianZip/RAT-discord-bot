@@ -1,5 +1,4 @@
 use serenity::builder::CreateCommand;
-use serenity::model::application::ResolvedOption;
 use std::fs::{metadata, read_dir};
 
 pub fn run(now_path: &mut String) -> String {
