@@ -10,10 +10,16 @@ use serenity::async_trait;
 use serenity::builder::{CreateInteractionResponse, CreateInteractionResponseMessage};
 use serenity::model::application::Interaction;
 use serenity::prelude::*;
+use serenity::json::json;
 use tokio::sync::Mutex;
 
 use std::env::current_dir;
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
 use std::str::FromStr;
+
+const MAX_FILE_SIZE: usize = 8 * 1024 * 1024;
 
 #[derive(Deserialize)]
 struct Config {
@@ -53,11 +59,25 @@ impl EventHandler for Handler {
                             println!("Cannot respond to slash command: {why}");
                         }
                     } else {
-                        let p = CreateAttachment::path(content).await.unwrap();
-                        let data = CreateInteractionResponseMessage::new().add_file(p);
-                        let builder = CreateInteractionResponse::Message(data);
-                        if let Err(why) = command.create_response(&ctx.http, builder).await {
-                            println!("Cannot respond to slash command: {why}");
+                        let mut file_bytes = File::open(content.clone()).expect("");
+                        let mut buffer = Vec::new();
+
+                        file_bytes.read_to_end(&mut buffer).expect(" ");
+
+                        let vectors: Vec<Vec<u8>> =
+                            buffer.chunks(MAX_FILE_SIZE).map(|ch| ch.to_vec()).collect();
+                        let fomratfile = get_file_extension(&content);
+
+                        for i in 0..vectors.len() {
+                            let mut ca_vector: Vec<CreateAttachment> = Vec::new();
+                            ca_vector.push(CreateAttachment::bytes(
+                                vectors[i].clone(),
+                                format!("{}.{}.{}", get_file_name_without_extension(&content),i, fomratfile),
+                            ));
+
+                            let map = json!({"message": "Ya hui znayet blyat"});
+                            let msgg = ctx.http.send_message(command.channel_id, ca_vector, &map).await;
+                            println!("\n\n{:?}\n\n", msgg);
                         }
                     }
                 } else if command.data.name == "screenshot" {
@@ -115,6 +135,19 @@ async fn main() {
     if let Err(why) = client.start().await {
         println!("Error client started: {why:?}");
     }
+}
+
+fn get_file_extension(filename: &str) -> String {
+    match filename.rfind('.') {
+        Some(idx) => filename[idx + 1..].to_lowercase(),
+        None => String::new(),
+    }
+}
+
+fn get_file_name_without_extension(path: &str) -> &str {
+    let path = Path::new(path);
+    let name = path.file_stem().unwrap();
+    name.to_str().unwrap()
 }
 
 fn config_reader() -> Config {
